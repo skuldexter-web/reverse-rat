@@ -1,0 +1,10 @@
+```gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.zip
+.DS_Store
+venv/
+.env
+screenshot*.png
+```
