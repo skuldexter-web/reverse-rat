@@ -9,10 +9,7 @@ class RemoteAdminGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Reverse RAT GUI Controller")
-
-        self.server = None
-        self.running = False
-
+        
         # --- controls ---
         self.host_var = tk.StringVar(value="0.0.0.0")
         self.port_var = tk.StringVar(value="4444")
@@ -37,10 +34,22 @@ class RemoteAdminGUI:
         self.session_list = tk.Listbox(root, height=6)
         self.session_list.grid(row=5, column=0, columnspan=2, sticky="nsew", padx=4, pady=4)
 
+        self.select_session_button = tk.Button(
+            root,
+            text="Select Session",
+            command=self.select_session
+        )
+        self.select_session_button.grid(
+            row=6,
+            column=0,
+            columnspan=2,
+            sticky="we",
+            pady=2
+        )
+
         # --- command area ---
         self.command_entry = tk.Entry(root)
         self.command_entry.grid(row=6, column=0, columnspan=2, sticky="we", padx=4, pady=2)
-        self.command_entry.bind("<Return>", lambda e: self.send_command())
 
         self.send_command_button = tk.Button(root, text="Send Command", command=self.send_command)
         self.send_command_button.grid(row=7, column=0, columnspan=2, sticky="we", pady=2)
@@ -84,20 +93,21 @@ class RemoteAdminGUI:
     def selected_session(self):
         if not self.server:
             return None
-        sel = self.session_list.curselection()
-        if not sel:
-            return None
-        idx = int(sel[0])
-        if idx >= len(self.server.sessions):
-            return None
-        session = self.server.sessions[idx]
+
+        selection = self.session_list.curselection()
+        if not selection:
+            self.log("[-] Selecteer eerst een sessie")
+            return
+        session_index = int(selection[0])
+        session_id = self.server.sessions[session_index].id
+        session = self.server.sessions[session_index]
         if not session.alive:
             return None
         return session
 
     def send_command(self, command=None):
         if not (session := self.selected_session()):
-            self.log("[-] No active session selected")
+            self.log("[-] Selecteer eerst een sessie om te commanderen")
             return
 
         cmd = self.command_entry.get().strip()
