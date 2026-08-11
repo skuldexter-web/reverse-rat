@@ -1,4 +1,3 @@
-```python
 import json
 
 
@@ -26,4 +25,3 @@ def recv_msg(conn):
         return json.loads(payload.decode("utf-8"))
     except Exception:
         return None
-```
