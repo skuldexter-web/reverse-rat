@@ -171,6 +171,29 @@ class RemoteAdminGUI:
             
         return base64.b64decode(data_str)
 
+    def decode_bytes_to_string(self, raw_bytes):
+        """Tries multiple Windows encodings to prevent garbled text."""
+        # 1. Try UTF-8
+        try:
+            return raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            pass
+
+        # 2. Try CP850 / CP437 (Standard Windows CMD in Western Europe)
+        try:
+            return raw_bytes.decode("cp850")
+        except UnicodeDecodeError:
+            pass
+
+        # 3. Try UTF-16 / Little-Endian (PowerShell output)
+        try:
+            return raw_bytes.decode("utf-16")
+        except UnicodeDecodeError:
+            pass
+
+        # 4. Fallback: Force UTF-8 replacing bad characters
+        return raw_bytes.decode("utf-8", errors="replace")
+
     def send_command(self, preset_cmd=None):
         session = self.selected_session()
         if not session:
@@ -192,8 +215,8 @@ class RemoteAdminGUI:
                 if resp and "data" in resp:
                     try:
                         decoded_bytes = self.safe_b64decode(resp["data"])
-                        decoded_text = decoded_bytes.decode("utf-8", errors="replace")
-                        self.log(f"[+] Output from Session {session.id}:\n{decoded_text}")
+                        readable_text = self.decode_bytes_to_string(decoded_bytes)
+                        self.log(f"[+] Output from Session {session.id}:\n{readable_text}")
                     except Exception as dec_err:
                         self.log(f"[-] Base64 decoding failed: {dec_err}")
                 else:
