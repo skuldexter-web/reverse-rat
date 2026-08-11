@@ -10,7 +10,7 @@ class RemoteAdminGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("C2 Remote Controller & Session Manager")
-        self.root.geometry("750 x 600")
+        self.root.geometry("750x600")
 
         self.server = None
         self.running = False
