@@ -1,0 +1,41 @@
+CUSTOM EDUCATIONAL & RESTRICTED USE LICENSE
+
+Copyright (c) 2026
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, and distribute copies of the Software,
+subject to the following conditions:
+
+1. EDUCATIONAL AND RESEARCH USE ONLY
+This Software is designed and provided strictly for educational purposes, 
+academic research, authorized security testing, and system administration 
+demonstrations in isolated, controlled lab environments.
+
+2. COMMERCIAL AND PROPRIETARY RESTRICTIONS
+The Software, in its original or modified forms, MAY NOT be sold, resold, 
+licensed, or otherwise distributed for monetary payment, commercial gain, 
+or as part of any paid product or service.
+
+3. GOVERNMENTAL USE RESTRICTIONS
+The Software MAY NOT be used, deployed, analyzed, or incorporated by any 
+governmental body, military organization, intelligence agency, law enforcement 
+agency, or state-sponsored entity for operational, offensive, surveillance, 
+or commercial purposes.
+
+4. DISCLAIMER OF LIABILITY AND WARRANTY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
+DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR 
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE 
+USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+5. USER COMPLIANCE AND ETHICAL RESPONSIBILITY
+By using, downloading, or executing this Software, you agree to comply with 
+all applicable local, state, national, and international laws. The author 
+assumes no responsibility or liability for any misuse, damage, unauthorized 
+access, or illegal activities conducted with this Software.
