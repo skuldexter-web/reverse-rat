@@ -1,4 +1,3 @@
-```python
 import argparse
 import base64
 import hmac
@@ -276,4 +275,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
