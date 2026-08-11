@@ -142,26 +142,28 @@ class RemoteAdminGUI:
                         else:
                             out = resp.get("data", "")
 
-                elif cmd == "screenshot":
-                    resp = session.command({"type": "screenshot"})
-                    if resp.get("ok"):
-                        path = f"session_{session.id}_screenshot.png"
-                        with open(path, "wb") as f:
-                            f.write(base64.b64decode(resp["data"]))
-                        out = f"[+] Screenshot saved to {path}"
-                    else:
-                        out = resp.get("data", "")
+elif cmd == "screenshot":
+    resp = session.command({"type": "screenshot"})
+    if resp.get("ok"):
+        path = f"session_{session.id}_screenshot.png"
+        with open(path, "wb") as f:
+            f.write(base64.b64decode(resp["data"]))
+        out = f"[+] Screenshot saved to {path}"
+    else:
+        out = resp.get("data", "")
 
-                else:
-                    out = "Unsupported command. Use exec <cmd>, ping, download <remote>
- <local>, screenshot"
+else:
+    out = (
+        "Unsupported command. Use exec <cmd>, ping, "
+        "download <remote> <local>, screenshot"
+    )
 
-            except Exception as e:
-                out = f"Error: {e}"
+except Exception as e:
+    out = f"Error: {e}"
 
-            self.root.after(0, lambda: self.log(out))
+self.root.after(0, lambda: self.log(out))
 
-        threading.Thread(target=worker, daemon=True).start()
+threading.Thread(target=worker, daemon=True).start()
 
 
 if __name__ == "__main__":
